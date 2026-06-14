@@ -5,6 +5,7 @@ description = "Self-hosted homelab security monitor"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "docker>=7.1.0",
     "pydantic-settings>=2.0",
 ]
 
@@ -40,4 +41,5 @@ dev = [
     "mypy>=2.1.0",
     "pytest>=9.1.0",
     "ruff>=0.15.17",
+    "types-docker>=7.1.0.20260518",
 ]
