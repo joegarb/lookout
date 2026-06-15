@@ -5,6 +5,7 @@ from threading import Lock
 
 from lookout.alerter import Alerter
 from lookout.analyzer import AIProvider, digest_prompt
+from lookout.exposure import scan_exposure
 from lookout.models import Alert, LogEntry
 
 logger = logging.getLogger(__name__)
@@ -36,11 +37,14 @@ class DigestBuffer:
             return [a for ts, a in self._findings if ts >= cutoff]
 
 
-def send_daily_digest(buffer: DigestBuffer, ai: AIProvider, alerter: Alerter) -> None:
+def send_daily_digest(
+    buffer: DigestBuffer, ai: AIProvider, alerter: Alerter, docker_url: str
+) -> None:
     logger.info("generating daily digest")
     entries = buffer.last_24h()
     findings = buffer.last_24h_findings()
-    prompt = digest_prompt(entries, findings)
+    exposures = scan_exposure(docker_url)
+    prompt = digest_prompt(entries, findings, exposures)
     try:
         summary = ai.complete(prompt)
         alerter.send_digest(summary)

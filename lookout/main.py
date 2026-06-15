@@ -10,6 +10,8 @@ from lookout.config import settings
 from lookout.detector import Detector
 from lookout.digest import DigestBuffer, send_daily_digest
 from lookout.discovery import discover
+from lookout.exposure import exposure_alert, scan_exposure
+from lookout.models import ExposureRisk
 from lookout.watcher import start_watchers, stop_watchers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -44,6 +46,12 @@ def main() -> None:
     detector = Detector()
     buffer = DigestBuffer(maxsize=settings.log_buffer_size)
 
+    # Catch dangerous exposure (e.g. a database published to the internet) at startup,
+    # rather than waiting up to a day for the first digest.
+    for exposure in scan_exposure(settings.docker_socket):
+        if exposure.risk == ExposureRisk.CRITICAL:
+            alerter.send_alert(exposure_alert(exposure))
+
     hour, minute = (int(p) for p in settings.digest_time.split(":"))
     scheduler = BackgroundScheduler()
     scheduler.add_job(
@@ -51,7 +59,7 @@ def main() -> None:
         trigger="cron",
         hour=hour,
         minute=minute,
-        args=[buffer, ai, alerter],
+        args=[buffer, ai, alerter, settings.docker_socket],
     )
     scheduler.start()
 

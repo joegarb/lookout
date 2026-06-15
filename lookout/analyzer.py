@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 import anthropic
 import openai
 
-from lookout.models import Alert, LogEntry
+from lookout.models import Alert, Exposure, ExposureRisk, LogEntry
 
 
 class AIProvider(Protocol):
@@ -100,11 +100,32 @@ def _summarise_findings(findings: list[Alert]) -> str:
     return "\n".join(lines)
 
 
+def _summarise_exposure(exposures: list[Exposure]) -> str:
+    if not exposures:
+        return "Exposure check: no containers are publishing ports to all interfaces."
+
+    # Surface CRITICAL findings first.
+    ordered = sorted(exposures, key=lambda e: e.risk != ExposureRisk.CRITICAL)
+    lines = ["Exposure check (containers reachable on all interfaces):"]
+    for e in ordered:
+        label = "CRITICAL" if e.risk == ExposureRisk.CRITICAL else "WARNING"
+        service = f"{e.service} " if e.service else ""
+        lines.append(
+            f"  {label}: {service}container '{e.container}' on "
+            f"{e.host_ip}:{e.host_port} ({e.container_port})"
+        )
+    return "\n".join(lines)
+
+
 def digest_prompt(
-    entries: list[LogEntry], findings: list[Alert] | None = None, period_hours: int = 24
+    entries: list[LogEntry],
+    findings: list[Alert] | None = None,
+    exposures: list[Exposure] | None = None,
+    period_hours: int = 24,
 ) -> str:
     summary = _summarise_entries(entries)
     findings_summary = _summarise_findings(findings or [])
+    exposure_summary = _summarise_exposure(exposures or [])
     since = (datetime.now() - timedelta(hours=period_hours)).strftime("%Y-%m-%d %H:%M")
     return textwrap.dedent(f"""
         You are a security assistant for a self-hosted homelab. Analyse the following web server
@@ -120,9 +141,13 @@ def digest_prompt(
         Be concise. Avoid jargon. The owner is technically literate but not a security professional.
         Probing and scanning are constant background noise on any public server; only call them out
         if the volume or pattern is genuinely unusual. Focus the owner's attention on what changed.
+        Treat any CRITICAL exposure as the most important thing to report — a database, cache,
+        or Docker API reachable from the internet is a serious misconfiguration to fix now.
 
         Traffic summary:
         {summary}
 
         {findings_summary}
+
+        {exposure_summary}
     """).strip()

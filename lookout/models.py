@@ -41,6 +41,23 @@ class AlertKind(Enum):
     ERROR_SPIKE = "error_spike"
     SENSITIVE_PATH = "sensitive_path"
     SENSITIVE_HIT = "sensitive_hit"
+    EXPOSURE = "exposure"
+
+
+class ExposureRisk(Enum):
+    CRITICAL = "critical"  # a database, cache, or the Docker API open to the world
+    WARNING = "warning"  # anything else published on all interfaces
+
+
+@dataclass
+class Exposure:
+    container: str
+    image: str
+    host_ip: str
+    host_port: str
+    container_port: str  # e.g. "5432/tcp"
+    service: str  # human name like "PostgreSQL", or "" if unknown
+    risk: ExposureRisk
 
 
 @dataclass

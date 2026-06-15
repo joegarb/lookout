@@ -4,6 +4,7 @@ from pathlib import Path
 import docker
 import docker.errors
 
+from lookout.dockerutil import image_tag
 from lookout.models import LogFormat, LogSource, SourceKind
 
 _WELL_KNOWN: list[tuple[Path, LogFormat]] = [
@@ -59,8 +60,7 @@ def discover(docker_url: str = "unix:///var/run/docker.sock") -> list[LogSource]
     try:
         client = docker.DockerClient(base_url=docker_url)
         for container in client.containers.list():
-            img = container.image
-            image = img.tags[0] if img and img.tags else ""
+            image = image_tag(container)
             name = container.name or ""
             container_id = container.id or ""
             if _PROXY_IMAGE_PATTERNS.search(image) or _PROXY_IMAGE_PATTERNS.search(name):
