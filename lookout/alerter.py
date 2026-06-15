@@ -48,7 +48,7 @@ class SmtpNotifier:
                     smtp.starttls()
                     smtp.login(self._username, self._password)
                     smtp.send_message(msg)
-        except smtplib.SMTPException as exc:
+        except (smtplib.SMTPException, OSError) as exc:
             logger.error("SMTP send failed for '%s': %s", title, exc)
 
 
