@@ -44,12 +44,14 @@ def _watch_docker(
         try:
             client = docker.DockerClient(base_url=docker_url)
             container = client.containers.get(source.location)
+            sample = container.logs(tail=20).decode(errors="ignore").splitlines()
+            fmt = detect_format(sample) or source.format
             logger.info("watching docker container %s", source.name)
             for raw in container.logs(stream=True, follow=True, tail=0):
                 if stop_event.is_set():
                     break
                 line = raw.decode(errors="ignore").strip()
-                _handle_line(line, source.format, source.name, detector, buffer, alerter)
+                _handle_line(line, fmt, source.name, detector, buffer, alerter)
             client.close()
         except docker.errors.DockerException as exc:
             logger.warning("docker watch error for %s: %s — retrying in 10s", source.name, exc)

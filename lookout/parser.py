@@ -52,7 +52,8 @@ def _parse_traefik(line: str, source: str) -> LogEntry | None:
             source=source,
         )
     except (ValueError, KeyError, json.JSONDecodeError):
-        return None
+        # Fall back to CLF — traefik can be configured to log in either format
+        return _parse_nginx(line, source)
 
 
 def _parse_caddy(line: str, source: str) -> LogEntry | None:
