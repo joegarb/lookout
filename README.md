@@ -1,19 +1,17 @@
 # lookout
 
-Self-hosted homelab security monitor for non-security-experts. Watches your web server logs, spots suspicious traffic in real-time, and emails you a plain-English daily digest so you know what's going on without having to be a security professional.
+Self-hosted homelab security monitor for non-security-experts. It watches your web server logs and tells you what's going on in two ways: a **plain-English daily digest** so you stay aware without reading access logs, and **rare real-time alerts** reserved for things that actually need you *now*.
 
-## What it watches for
+## What it tells you, and when
 
-- **Brute force** — repeated auth attempts from the same IP
-- **Scanning** — IPs probing many different paths in a short window
-- **Sensitive path probes** — requests for `.env`, `wp-admin`, `.git`, admin panels, and common web shells
-- **Path traversal** — `../` sequences attempting to escape the web root
-- **Injection probes** — Log4Shell (`${jndi:`), SQL injection, and similar payload patterns
-- **Error spikes** — sudden surges in 4xx/5xx responses
+Lookout splits findings into two channels:
+
+- **Daily digest** — a plain-English summary of the last 24 hours. This is where the constant noise goes: sensitive-path probes (`.env`, `wp-admin`, `.git`), path traversal and injection attempts (`../`, Log4Shell, SQL injection) that got blocked, scanning, and failed brute force.
+- **Real-time alerts** — emailed immediately and kept rare, for confirmed impact: a probe that *succeeded* (e.g. `.env` returned `200`), or an error spike that usually means your own service is broken. Repeats are suppressed for a cooldown window so one event can't flood your inbox.
 
 Discovery is automatic: it finds log sources from running Docker containers and well-known file paths (nginx, Traefik, Caddy, Apache) — no manual config needed.
 
-If you use fail2ban or CrowdSec, those tools may ban IPs before lookout's brute-force threshold is reached — that's fine, it means they're working. Lookout covers what they don't: scanning patterns, sensitive path probes, and injection attempts. If traffic passes through a WAF or Cloudflare before hitting your server, lookout only sees what those filters let through (which is still the traffic that matters).
+Lookout doesn't block anything, so keep running fail2ban, CrowdSec, or a WAF to actually stop attacks — lookout just tells you, in plain English, what got through and whether you should care.
 
 ## Quick start
 

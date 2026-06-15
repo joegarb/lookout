@@ -29,7 +29,10 @@ def _handle_line(
         return
     buffer.add(entry)
     for alert in detector.process(entry):
-        alerter.send_alert(alert)
+        if alert.immediate:
+            alerter.send_alert(alert)
+        else:
+            buffer.add_finding(alert)
 
 
 def _watch_docker(

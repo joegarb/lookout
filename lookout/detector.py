@@ -27,6 +27,11 @@ _ERROR_WINDOW = timedelta(minutes=1)
 _ERROR_THRESHOLD = 50
 
 
+def _is_success(status: int) -> bool:
+    """A 2xx response means the request was actually served (not blocked/missing)."""
+    return 200 <= status < 300
+
+
 class Detector:
     def __init__(self, max_tracked_ips: int = 10_000) -> None:
         self._max_tracked_ips = max_tracked_ips
@@ -35,15 +40,21 @@ class Detector:
         self._path_hits: OrderedDict[str, deque[tuple[datetime, str]]] = OrderedDict()
         # sources are bounded (a handful of services), so no cap needed here
         self._error_hits: dict[str, deque[datetime]] = defaultdict(deque)
+        # keys currently over threshold — so we alert once on crossing, not per line
+        self._brute_active: set[str] = set()
+        self._scan_active: set[str] = set()
+        self._error_active: set[str] = set()
 
     def _get_ip_deque(
         self,
         d: OrderedDict[str, deque[tuple[datetime, str]]],
+        active: set[str],
         ip: str,
     ) -> deque[tuple[datetime, str]]:
         if ip not in d:
             if len(d) >= self._max_tracked_ips:
-                d.popitem(last=False)
+                old, _ = d.popitem(last=False)
+                active.discard(old)
             d[ip] = deque()
         return d[ip]
 
@@ -59,51 +70,78 @@ class Detector:
         return alerts
 
     def _check_sensitive(self, entry: LogEntry) -> list[Alert]:
-        if _SENSITIVE_PATHS.search(entry.path) or _INJECTION_PATTERNS.search(entry.path):
+        if not (_SENSITIVE_PATHS.search(entry.path) or _INJECTION_PATTERNS.search(entry.path)):
+            return []
+        detail = f"{entry.method} {entry.path} → {entry.status}"
+        if _is_success(entry.status):
+            # The probe worked — the file/path was actually served. Interrupt-worthy.
             return [
                 Alert(
-                    kind=AlertKind.SENSITIVE_PATH,
+                    kind=AlertKind.SENSITIVE_HIT,
                     source=entry.source,
                     ip=entry.ip,
-                    detail=f"{entry.method} {entry.path} → {entry.status}",
+                    detail=detail,
+                    immediate=True,
                     entries=[entry],
                 )
             ]
-        return []
+        # A blocked/missing probe is background noise — record it for the digest only.
+        return [
+            Alert(
+                kind=AlertKind.SENSITIVE_PATH,
+                source=entry.source,
+                ip=entry.ip,
+                detail=detail,
+                immediate=False,
+                entries=[entry],
+            )
+        ]
+
+    def _crossed(self, count: int, threshold: int, key: str, active: set[str]) -> bool:
+        """True only on the transition up to the threshold; resets once below again."""
+        if count >= threshold:
+            if key in active:
+                return False
+            active.add(key)
+            return True
+        active.discard(key)
+        return False
 
     def _check_brute_force(self, entry: LogEntry) -> list[Alert]:
         if not _AUTH_PATHS.search(entry.path):
             return []
-        q = self._get_ip_deque(self._auth_hits, entry.ip)
+        q = self._get_ip_deque(self._auth_hits, self._brute_active, entry.ip)
         q.append((entry.timestamp, entry.path))
         cutoff = entry.timestamp - _BRUTE_WINDOW
         while q and q[0][0] < cutoff:
             q.popleft()
-        if len(q) == _BRUTE_THRESHOLD:
+        if self._crossed(len(q), _BRUTE_THRESHOLD, entry.ip, self._brute_active):
             return [
                 Alert(
                     kind=AlertKind.BRUTE_FORCE,
                     source=entry.source,
                     ip=entry.ip,
                     detail=f"{len(q)} auth requests in {_BRUTE_WINDOW}",
+                    immediate=False,
                 )
             ]
         return []
 
     def _check_scanner(self, entry: LogEntry) -> list[Alert]:
-        q = self._get_ip_deque(self._path_hits, entry.ip)
+        q = self._get_ip_deque(self._path_hits, self._scan_active, entry.ip)
         q.append((entry.timestamp, entry.path))
         cutoff = entry.timestamp - _SCAN_WINDOW
         while q and q[0][0] < cutoff:
             q.popleft()
         distinct = len({p for _, p in q})
-        if distinct == _SCAN_THRESHOLD:
+        if self._crossed(distinct, _SCAN_THRESHOLD, entry.ip, self._scan_active):
             return [
                 Alert(
                     kind=AlertKind.SCANNER,
                     source=entry.source,
                     ip=entry.ip,
                     detail=f"{distinct} distinct paths in {_SCAN_WINDOW}",
+                    immediate=False,
                 )
             ]
         return []
@@ -116,13 +154,15 @@ class Detector:
         cutoff = entry.timestamp - _ERROR_WINDOW
         while q and q[0] < cutoff:
             q.popleft()
-        if len(q) == _ERROR_THRESHOLD:
+        if self._crossed(len(q), _ERROR_THRESHOLD, entry.source, self._error_active):
+            # Errors come from many IPs; attributing the spike to one is misleading.
             return [
                 Alert(
                     kind=AlertKind.ERROR_SPIKE,
                     source=entry.source,
-                    ip=entry.ip,
+                    ip="-",
                     detail=f"{len(q)} errors in {_ERROR_WINDOW}",
+                    immediate=True,
                 )
             ]
         return []

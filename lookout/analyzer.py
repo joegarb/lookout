@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 import anthropic
 import openai
 
-from lookout.models import LogEntry
+from lookout.models import Alert, LogEntry
 
 
 class AIProvider(Protocol):
@@ -88,8 +88,23 @@ def _summarise_entries(entries: list[LogEntry]) -> str:
     return "\n".join(lines)
 
 
-def digest_prompt(entries: list[LogEntry], period_hours: int = 24) -> str:
+def _summarise_findings(findings: list[Alert]) -> str:
+    if not findings:
+        return "No suspicious patterns were flagged."
+
+    by_kind = Counter(f.kind.value for f in findings)
+    lines = ["Flagged patterns (low-confidence — not individually alerted):"]
+    for kind, count in by_kind.most_common():
+        top_ips = Counter(f.ip for f in findings if f.kind.value == kind).most_common(5)
+        lines.append(f"  {kind}: {count} events; top IPs: {top_ips}")
+    return "\n".join(lines)
+
+
+def digest_prompt(
+    entries: list[LogEntry], findings: list[Alert] | None = None, period_hours: int = 24
+) -> str:
     summary = _summarise_entries(entries)
+    findings_summary = _summarise_findings(findings or [])
     since = (datetime.now() - timedelta(hours=period_hours)).strftime("%Y-%m-%d %H:%M")
     return textwrap.dedent(f"""
         You are a security assistant for a self-hosted homelab. Analyse the following web server
@@ -103,7 +118,11 @@ def digest_prompt(entries: list[LogEntry], period_hours: int = 24) -> str:
         4. A closing note if everything looks normal
 
         Be concise. Avoid jargon. The owner is technically literate but not a security professional.
+        Probing and scanning are constant background noise on any public server; only call them out
+        if the volume or pattern is genuinely unusual. Focus the owner's attention on what changed.
 
         Traffic summary:
         {summary}
+
+        {findings_summary}
     """).strip()

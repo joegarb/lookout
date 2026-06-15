@@ -40,6 +40,7 @@ class AlertKind(Enum):
     SCANNER = "scanner"
     ERROR_SPIKE = "error_spike"
     SENSITIVE_PATH = "sensitive_path"
+    SENSITIVE_HIT = "sensitive_hit"
 
 
 @dataclass
@@ -48,4 +49,6 @@ class Alert:
     source: str
     ip: str
     detail: str
+    # immediate alerts are emailed at once; non-immediate ones feed the daily digest
+    immediate: bool = True
     entries: list[LogEntry] = field(default_factory=list)
