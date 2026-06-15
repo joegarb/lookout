@@ -4,6 +4,7 @@ import sys
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from lookout import enrichment
 from lookout.alerter import (
     Alerter,
     MultiNotifier,
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     settings.validate_ai()
     settings.validate_notifications()
+    enrichment.configure(settings.ip_enrichment)
 
     sources = discover(settings.docker_socket)
     if not sources:

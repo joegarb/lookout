@@ -24,6 +24,8 @@ class Settings(BaseSettings):
 
     digest_time: str = "08:00"
     alert_cooldown_minutes: int = 60
+    # Annotate IPs with country/network via ip-api.com; set false to disable the lookups
+    ip_enrichment: bool = True
 
     docker_socket: str = "unix:///var/run/docker.sock"
     log_buffer_size: int = 50_000

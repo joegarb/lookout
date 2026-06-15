@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 import anthropic
 import openai
 
+from lookout import enrichment
 from lookout.models import Alert, Exposure, ExposureRisk, LogEntry
 
 
@@ -74,16 +75,23 @@ def _summarise_entries(entries: list[LogEntry]) -> str:
     top_paths = Counter(_strip_qs(e.path) for e in entries).most_common(10)
     errors = [e for e in entries if e.status >= 400]
 
+    # Resolve every IP we're about to print in one batch, then annotate each.
+    enrichment.prefetch([ip for ip, _ in top_ips] + [e.ip for e in errors[:20]])
+    top_ips_str = ", ".join(f"{ip}{enrichment.describe(ip)} ({n})" for ip, n in top_ips)
+
     lines = [
         f"Total requests: {total}",
         f"Status codes: {dict(status_counts)}",
-        f"Top IPs: {top_ips}",
+        f"Top IPs: {top_ips_str}",
         f"Top paths: {top_paths}",
         f"Error requests ({len(errors)} total, sample of up to 20):",
     ]
     for e in errors[:20]:
         path = _strip_qs(e.path)
-        lines.append(f"  {e.timestamp.isoformat()} {e.ip} {e.method} {path} {e.status}")
+        lines.append(
+            f"  {e.timestamp.isoformat()} {e.ip}{enrichment.describe(e.ip)} "
+            f"{e.method} {path} {e.status}"
+        )
 
     return "\n".join(lines)
 
@@ -92,11 +100,13 @@ def _summarise_findings(findings: list[Alert]) -> str:
     if not findings:
         return "No suspicious patterns were flagged."
 
+    enrichment.prefetch(f.ip for f in findings)
     by_kind = Counter(f.kind.value for f in findings)
     lines = ["Flagged patterns (low-confidence — not individually alerted):"]
     for kind, count in by_kind.most_common():
         top_ips = Counter(f.ip for f in findings if f.kind.value == kind).most_common(5)
-        lines.append(f"  {kind}: {count} events; top IPs: {top_ips}")
+        ips_str = ", ".join(f"{ip}{enrichment.describe(ip)} ({n})" for ip, n in top_ips)
+        lines.append(f"  {kind}: {count} events; top IPs: {ips_str}")
     return "\n".join(lines)
 
 

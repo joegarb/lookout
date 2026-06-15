@@ -85,6 +85,7 @@ Configure any combination of the channels below — alerts and the digest are se
 |---|---|---|
 | `DIGEST_TIME` | `08:00` | Daily digest time (local, 24h format) |
 | `ALERT_COOLDOWN_MINUTES` | `60` | Suppress duplicate alerts for this long |
+| `IP_ENRICHMENT` | `true` | Annotate IPs with country/network via ip-api.com (so alerts read "… from DigitalOcean, Germany"). Set `false` to disable the external lookups. |
 
 ## Development
 

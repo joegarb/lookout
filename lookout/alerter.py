@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from typing import Protocol
 
+from lookout import enrichment
 from lookout.models import Alert
 
 logger = logging.getLogger(__name__)
@@ -149,7 +150,10 @@ class Alerter:
             logger.debug("suppressed duplicate %s from %s", alert.kind.value, alert.ip)
             return
         title = f"[lookout] {alert.kind.value.replace('_', ' ').title()} - {alert.ip}"
-        body = f"Source: {alert.source}\nDetail: {alert.detail}"
+        ip_line = ""
+        if alert.ip and alert.ip != "-":
+            ip_line = f"\nIP: {alert.ip}{enrichment.describe(alert.ip)}"
+        body = f"Source: {alert.source}{ip_line}\nDetail: {alert.detail}"
         self._notifier.send(title, body)
         logger.info("alert sent: %s", title)
 
