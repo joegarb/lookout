@@ -26,25 +26,25 @@ class DigestBuffer:
         with self._lock:
             self._findings.append((datetime.now(UTC).replace(tzinfo=None), alert))
 
-    def last_24h(self) -> list[LogEntry]:
-        cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=24)
+    def entries_since(self, hours: int) -> list[LogEntry]:
+        cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=hours)
         with self._lock:
             return [e for e in self._buf if e.timestamp >= cutoff]
 
-    def last_24h_findings(self) -> list[Alert]:
-        cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=24)
+    def findings_since(self, hours: int) -> list[Alert]:
+        cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=hours)
         with self._lock:
             return [a for ts, a in self._findings if ts >= cutoff]
 
 
-def send_daily_digest(
-    buffer: DigestBuffer, ai: AIProvider, alerter: Alerter, docker_url: str
+def send_digest(
+    buffer: DigestBuffer, ai: AIProvider, alerter: Alerter, docker_url: str, period_hours: int = 24
 ) -> None:
-    logger.info("generating daily digest")
-    entries = buffer.last_24h()
-    findings = buffer.last_24h_findings()
+    logger.info("generating digest for the last %dh", period_hours)
+    entries = buffer.entries_since(period_hours)
+    findings = buffer.findings_since(period_hours)
     exposures = scan_exposure(docker_url)
-    prompt = digest_prompt(entries, findings, exposures)
+    prompt = digest_prompt(entries, findings, exposures, period_hours=period_hours)
     try:
         summary = ai.complete(prompt)
         alerter.send_digest(summary)

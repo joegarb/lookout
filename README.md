@@ -1,12 +1,12 @@
 # lookout
 
-Self-hosted homelab security monitor for non-security-experts. It watches your web server logs and tells you what's going on in two ways: a **plain-English daily digest** so you stay aware without reading access logs, and **rare real-time alerts** reserved for things that actually need you *now*.
+Self-hosted homelab security monitor for non-security-experts. It watches your web server logs and tells you what's going on in two ways: a **plain-English digest** (daily by default) so you stay aware without reading access logs, and **rare real-time alerts** reserved for things that actually need you *now*.
 
 ## What it tells you, and when
 
 Lookout splits findings into two channels:
 
-- **Daily digest** — a plain-English summary of the last 24 hours. This is where the constant noise goes: sensitive-path probes (`.env`, `wp-admin`, `.git`), path traversal and injection attempts (`../`, Log4Shell, SQL injection) that got blocked, scanning, and failed brute force.
+- **Digest** — a plain-English summary of recent activity, on whatever schedule you set (daily by default). This is where the constant noise goes: sensitive-path probes (`.env`, `wp-admin`, `.git`), path traversal and injection attempts (`../`, Log4Shell, SQL injection) that got blocked, scanning, and failed brute force.
 - **Real-time alerts** — emailed immediately and kept rare, for confirmed impact: a probe that *succeeded* (e.g. `.env` returned `200`), or an error spike that usually means your own service is broken. Repeats are suppressed for a cooldown window so one event can't flood your inbox.
 
 It also checks what your containers actually expose. Using the Docker socket, it spots ports published to all interfaces (`0.0.0.0`) — and because Docker bypasses host firewalls like ufw, this catches things a firewall check would miss. A database, cache, or the Docker API left open to the internet is flagged immediately; everything else is noted in the digest.
@@ -89,7 +89,7 @@ docker compose exec lookout python -m lookout.selftest
 
 | Variable | Default | Description |
 |---|---|---|
-| `DIGEST_TIME` | `08:00` | Daily digest time (local, 24h format) |
+| `DIGEST_SCHEDULE` | `0 8 * * *` | Cron expression for the digest (default 8am daily; e.g. `0 * * * *` hourly, `0 8 * * 1` 8am Mondays). The lookback window matches the interval automatically. |
 | `ALERT_COOLDOWN_MINUTES` | `60` | Suppress duplicate alerts for this long |
 | `IP_ENRICHMENT` | `true` | Annotate IPs with country/network via ip-api.com (so alerts read "… from DigitalOcean, Germany"). Set `false` to disable the external lookups. |
 

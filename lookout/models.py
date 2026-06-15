@@ -66,6 +66,6 @@ class Alert:
     source: str
     ip: str
     detail: str
-    # immediate alerts are emailed at once; non-immediate ones feed the daily digest
+    # immediate alerts are emailed at once; non-immediate ones feed the digest
     immediate: bool = True
     entries: list[LogEntry] = field(default_factory=list)

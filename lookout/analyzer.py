@@ -140,7 +140,7 @@ def digest_prompt(
     return textwrap.dedent(f"""
         You are a security assistant for a self-hosted homelab. Analyse the following web server
         traffic summary from the last {period_hours} hours (since {since}) and write a plain-English
-        daily digest for the homelab owner.
+        digest for the homelab owner.
 
         Structure your response as:
         1. A one-sentence overall assessment (safe / some concerns / needs attention)

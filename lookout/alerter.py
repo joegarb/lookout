@@ -158,5 +158,5 @@ class Alerter:
         logger.info("alert sent: %s", title)
 
     def send_digest(self, body: str) -> None:
-        self._notifier.send("[lookout] Daily digest", body)
+        self._notifier.send("[lookout] Security digest", body)
         logger.info("digest sent")

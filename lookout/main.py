@@ -1,8 +1,10 @@
 import logging
 import signal
 import sys
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from lookout import enrichment
 from lookout.alerter import (
@@ -17,7 +19,7 @@ from lookout.alerter import (
 from lookout.analyzer import build_provider
 from lookout.config import Settings, settings
 from lookout.detector import Detector
-from lookout.digest import DigestBuffer, send_daily_digest
+from lookout.digest import DigestBuffer, send_digest
 from lookout.discovery import discover
 from lookout.exposure import exposure_alert, scan_exposure
 from lookout.models import ExposureRisk
@@ -25,6 +27,16 @@ from lookout.watcher import start_watchers, stop_watchers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def digest_period_hours(trigger: CronTrigger) -> int:
+    # Lookback window = the gap between two consecutive runs, so each digest covers
+    # exactly the activity since the previous one (24h daily, 1h hourly, etc.).
+    now = datetime.now().astimezone()
+    first: datetime = trigger.get_next_fire_time(None, now)
+    second: datetime = trigger.get_next_fire_time(first, first + timedelta(seconds=1))
+    hours = round((second - first).total_seconds() / 3600)
+    return max(int(hours), 1)
 
 
 def build_notifier(cfg: Settings) -> MultiNotifier:
@@ -78,14 +90,13 @@ def main() -> None:
         if exposure.risk == ExposureRisk.CRITICAL:
             alerter.send_alert(exposure_alert(exposure))
 
-    hour, minute = (int(p) for p in settings.digest_time.split(":"))
+    trigger = CronTrigger.from_crontab(settings.digest_schedule)
+    period_hours = digest_period_hours(trigger)
     scheduler = BackgroundScheduler()
     scheduler.add_job(
-        send_daily_digest,
-        trigger="cron",
-        hour=hour,
-        minute=minute,
-        args=[buffer, ai, alerter, settings.docker_socket],
+        send_digest,
+        trigger=trigger,
+        args=[buffer, ai, alerter, settings.docker_socket, period_hours],
     )
     scheduler.start()
 

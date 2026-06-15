@@ -22,7 +22,9 @@ class Settings(BaseSettings):
     # Generic webhook (Discord, Slack, Home Assistant, etc.) — receives a JSON POST
     webhook_url: str = ""
 
-    digest_time: str = "08:00"
+    # Cron expression for the digest (default: 8am daily). e.g. "0 * * * *" hourly,
+    # "0 8 * * 1" 8am Mondays. The lookback window matches the interval automatically.
+    digest_schedule: str = "0 8 * * *"
     alert_cooldown_minutes: int = 60
     # Annotate IPs with country/network via ip-api.com; set false to disable the lookups
     ip_enrichment: bool = True
