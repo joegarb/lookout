@@ -4,7 +4,15 @@ import sys
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from lookout.alerter import Alerter, SmtpNotifier
+from lookout.alerter import (
+    Alerter,
+    MultiNotifier,
+    Notifier,
+    NtfyNotifier,
+    SmtpNotifier,
+    WebhookNotifier,
+    resolve_smtp_encryption,
+)
 from lookout.analyzer import build_provider
 from lookout.config import settings
 from lookout.detector import Detector
@@ -33,16 +41,29 @@ def main() -> None:
     ai = build_provider(
         settings.ai_provider_order, settings.anthropic_api_key, settings.openai_api_key
     )
-    notifier = SmtpNotifier(
-        host=settings.smtp_host,
-        port=settings.smtp_port,
-        username=settings.smtp_username,
-        password=settings.smtp_password,
-        to_addr=settings.alert_email_to,
-        from_addr=settings.alert_email_from,
-        use_tls=settings.smtp_use_tls,
+    notifiers: list[Notifier] = []
+    if settings.smtp_host:
+        notifiers.append(
+            SmtpNotifier(
+                host=settings.smtp_host,
+                port=settings.smtp_port,
+                username=settings.smtp_username,
+                password=settings.smtp_password,
+                to_addr=settings.alert_email_to,
+                from_addr=settings.alert_email_from,
+                encryption=resolve_smtp_encryption(settings.smtp_encryption, settings.smtp_port),
+            )
+        )
+    if settings.ntfy_url:
+        notifiers.append(NtfyNotifier(settings.ntfy_url, settings.ntfy_token or None))
+    if settings.webhook_url:
+        notifiers.append(WebhookNotifier(settings.webhook_url))
+    for n in notifiers:
+        logger.info("notifications enabled: %s", type(n).__name__)
+
+    alerter = Alerter(
+        notifier=MultiNotifier(notifiers), cooldown_minutes=settings.alert_cooldown_minutes
     )
-    alerter = Alerter(notifier=notifier, cooldown_minutes=settings.alert_cooldown_minutes)
     detector = Detector()
     buffer = DigestBuffer(maxsize=settings.log_buffer_size)
 

@@ -50,7 +50,11 @@ services:
 
 At least one key is required. If both are set, `AI_PROVIDER_ORDER` controls which is used first.
 
-### Notifications (SMTP)
+### Notifications
+
+Configure any combination of the channels below — alerts and the digest are sent to all of them. At least one is required.
+
+**Email (SMTP)**
 
 | Variable | Default | Description |
 |---|---|---|
@@ -58,9 +62,22 @@ At least one key is required. If both are set, `AI_PROVIDER_ORDER` controls whic
 | `SMTP_PORT` | `587` | SMTP port |
 | `SMTP_USERNAME` | — | SMTP username |
 | `SMTP_PASSWORD` | — | SMTP password |
-| `SMTP_USE_TLS` | `true` | Whether to use TLS |
-| `ALERT_EMAIL_TO` | — | Recipient address |
-| `ALERT_EMAIL_FROM` | — | Sender address |
+| `SMTP_ENCRYPTION` | `auto` | `auto` picks by port (465 → SSL, otherwise STARTTLS). Override with `ssl`, `starttls`, or `none`. |
+| `ALERT_EMAIL_TO` | — | Recipient address (required if `SMTP_HOST` is set) |
+| `ALERT_EMAIL_FROM` | — | Sender address (required if `SMTP_HOST` is set) |
+
+**ntfy** (push to your phone/desktop)
+
+| Variable | Default | Description |
+|---|---|---|
+| `NTFY_URL` | — | Full topic URL, e.g. `https://ntfy.sh/your-topic` |
+| `NTFY_TOKEN` | — | Access token, only for protected topics |
+
+**Webhook** (Discord, Slack, Home Assistant, etc.)
+
+| Variable | Default | Description |
+|---|---|---|
+| `WEBHOOK_URL` | — | Receives a JSON POST; the payload includes `content`/`text` so Discord and Slack incoming webhooks work as-is |
 
 ### General
 
