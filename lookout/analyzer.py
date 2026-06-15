@@ -2,6 +2,7 @@ import textwrap
 from collections import Counter
 from datetime import datetime, timedelta
 from typing import Protocol
+from urllib.parse import urlsplit
 
 import anthropic
 import openai
@@ -64,10 +65,13 @@ def _summarise_entries(entries: list[LogEntry]) -> str:
     if not entries:
         return "No log entries recorded."
 
+    def _strip_qs(path: str) -> str:
+        return urlsplit(path).path
+
     total = len(entries)
     status_counts = Counter(e.status for e in entries)
     top_ips = Counter(e.ip for e in entries).most_common(5)
-    top_paths = Counter(e.path for e in entries).most_common(10)
+    top_paths = Counter(_strip_qs(e.path) for e in entries).most_common(10)
     errors = [e for e in entries if e.status >= 400]
 
     lines = [
@@ -78,7 +82,8 @@ def _summarise_entries(entries: list[LogEntry]) -> str:
         f"Error requests ({len(errors)} total, sample of up to 20):",
     ]
     for e in errors[:20]:
-        lines.append(f"  {e.timestamp.isoformat()} {e.ip} {e.method} {e.path} {e.status}")
+        path = _strip_qs(e.path)
+        lines.append(f"  {e.timestamp.isoformat()} {e.ip} {e.method} {path} {e.status}")
 
     return "\n".join(lines)
 
