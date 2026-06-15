@@ -79,6 +79,12 @@ Configure any combination of the channels below — alerts and the digest are se
 |---|---|---|
 | `WEBHOOK_URL` | — | Receives a JSON POST; the payload includes `content`/`text` so Discord and Slack incoming webhooks work as-is |
 
+To confirm delivery is working, send a test through every configured channel:
+
+```bash
+docker compose exec lookout python -m lookout.selftest
+```
+
 ### General
 
 | Variable | Default | Description |

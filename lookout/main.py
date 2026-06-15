@@ -15,7 +15,7 @@ from lookout.alerter import (
     resolve_smtp_encryption,
 )
 from lookout.analyzer import build_provider
-from lookout.config import settings
+from lookout.config import Settings, settings
 from lookout.detector import Detector
 from lookout.digest import DigestBuffer, send_daily_digest
 from lookout.discovery import discover
@@ -25,6 +25,29 @@ from lookout.watcher import start_watchers, stop_watchers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def build_notifier(cfg: Settings) -> MultiNotifier:
+    notifiers: list[Notifier] = []
+    if cfg.smtp_host:
+        notifiers.append(
+            SmtpNotifier(
+                host=cfg.smtp_host,
+                port=cfg.smtp_port,
+                username=cfg.smtp_username,
+                password=cfg.smtp_password,
+                to_addr=cfg.alert_email_to,
+                from_addr=cfg.alert_email_from,
+                encryption=resolve_smtp_encryption(cfg.smtp_encryption, cfg.smtp_port),
+            )
+        )
+    if cfg.ntfy_url:
+        notifiers.append(NtfyNotifier(cfg.ntfy_url, cfg.ntfy_token or None))
+    if cfg.webhook_url:
+        notifiers.append(WebhookNotifier(cfg.webhook_url))
+    for n in notifiers:
+        logger.info("notifications enabled: %s", type(n).__name__)
+    return MultiNotifier(notifiers)
 
 
 def main() -> None:
@@ -43,28 +66,8 @@ def main() -> None:
     ai = build_provider(
         settings.ai_provider_order, settings.anthropic_api_key, settings.openai_api_key
     )
-    notifiers: list[Notifier] = []
-    if settings.smtp_host:
-        notifiers.append(
-            SmtpNotifier(
-                host=settings.smtp_host,
-                port=settings.smtp_port,
-                username=settings.smtp_username,
-                password=settings.smtp_password,
-                to_addr=settings.alert_email_to,
-                from_addr=settings.alert_email_from,
-                encryption=resolve_smtp_encryption(settings.smtp_encryption, settings.smtp_port),
-            )
-        )
-    if settings.ntfy_url:
-        notifiers.append(NtfyNotifier(settings.ntfy_url, settings.ntfy_token or None))
-    if settings.webhook_url:
-        notifiers.append(WebhookNotifier(settings.webhook_url))
-    for n in notifiers:
-        logger.info("notifications enabled: %s", type(n).__name__)
-
     alerter = Alerter(
-        notifier=MultiNotifier(notifiers), cooldown_minutes=settings.alert_cooldown_minutes
+        notifier=build_notifier(settings), cooldown_minutes=settings.alert_cooldown_minutes
     )
     detector = Detector()
     buffer = DigestBuffer(maxsize=settings.log_buffer_size)
