@@ -1,6 +1,5 @@
 import textwrap
 from collections import Counter
-from datetime import datetime, timedelta
 from typing import Protocol
 from urllib.parse import urlsplit
 
@@ -136,11 +135,10 @@ def digest_prompt(
     summary = _summarise_entries(entries)
     findings_summary = _summarise_findings(findings or [])
     exposure_summary = _summarise_exposure(exposures or [])
-    since = (datetime.now() - timedelta(hours=period_hours)).strftime("%Y-%m-%d %H:%M")
     return textwrap.dedent(f"""
         You are a security assistant for a self-hosted homelab. Analyse the following web server
-        traffic summary from the last {period_hours} hours (since {since}) and write a plain-English
-        digest for the homelab owner.
+        traffic summary from the last {period_hours} hours and write a plain-English digest for
+        the homelab owner.
 
         Structure your response as:
         1. A one-sentence overall assessment (safe / some concerns / needs attention)
