@@ -1,3 +1,4 @@
+import ipaddress
 from typing import Any
 
 import docker
@@ -19,8 +20,16 @@ _SENSITIVE_PORTS: dict[int, str] = {
     2376: "Docker API",
 }
 
-# HostIp values that mean "bound to every interface" — internet-reachable on a public host.
-_PUBLIC_IPS = {"0.0.0.0", "::", ""}
+
+def _is_public(host_ip: str) -> bool:
+    # All-interfaces wildcards are unambiguously internet-reachable.
+    if host_ip in {"0.0.0.0", "::", ""}:
+        return True
+    try:
+        addr = ipaddress.ip_address(host_ip)
+        return not (addr.is_private or addr.is_loopback)
+    except ValueError:
+        return False
 
 
 def _exposures_for_container(
@@ -31,8 +40,8 @@ def _exposures_for_container(
     for container_port, bindings in ports.items():
         for binding in bindings or []:
             host_ip = binding.get("HostIp", "")
-            if host_ip not in _PUBLIC_IPS:
-                continue  # localhost-bound (e.g. 127.0.0.1) — not exposed, skip
+            if not _is_public(host_ip):
+                continue  # private or loopback — not internet-reachable, skip
             try:
                 num = int(container_port.split("/")[0])
             except ValueError:

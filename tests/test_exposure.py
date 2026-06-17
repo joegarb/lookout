@@ -7,6 +7,17 @@ def test_localhost_binding_is_not_exposed():
     assert _exposures_for_container("app", "app:latest", ports) == []
 
 
+def test_private_ip_binding_is_not_exposed():
+    ports = {"8080/tcp": [{"HostIp": "192.168.1.10", "HostPort": "8080"}]}
+    assert _exposures_for_container("app", "app:latest", ports) == []
+
+
+def test_public_ip_binding_is_exposed():
+    ports = {"8080/tcp": [{"HostIp": "1.2.3.4", "HostPort": "8080"}]}
+    found = _exposures_for_container("app", "app:latest", ports)
+    assert len(found) == 1
+
+
 def test_unpublished_port_is_not_exposed():
     ports = {"9000/tcp": None}  # exposed internally but not published
     assert _exposures_for_container("app", "app:latest", ports) == []

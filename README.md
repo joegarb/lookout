@@ -9,7 +9,7 @@ Lookout splits findings into two channels:
 - **Digest** — a plain-English summary of recent activity, on whatever schedule you set (daily by default). This is where the constant noise goes: sensitive-path probes (`.env`, `wp-admin`, `.git`), path traversal and injection attempts (`../`, Log4Shell, SQL injection) that got blocked, scanning, and failed brute force.
 - **Real-time alerts** — emailed immediately and kept rare, for confirmed impact: a probe that *succeeded* (e.g. `.env` returned `200`), or an error spike that usually means your own service is broken. Repeats are suppressed for a cooldown window so one event can't flood your inbox.
 
-It also checks what your containers actually expose. Using the Docker socket, it spots ports published to all interfaces (`0.0.0.0`) — and because Docker bypasses host firewalls like ufw, this catches things a firewall check would miss. A database, cache, or the Docker API left open to the internet is flagged immediately; everything else is noted in the digest.
+It also checks what your containers actually expose. Using the Docker socket, it spots ports bound to all interfaces (`0.0.0.0`) or a public IP — and because Docker bypasses host firewalls like ufw, this catches things a firewall check would miss. A database, cache, or the Docker API left open to the internet is flagged immediately; everything else is noted in the digest.
 
 Discovery is automatic: it finds log sources from running Docker containers and well-known file paths (nginx, Traefik, Caddy, Apache) — no manual config needed.
 
