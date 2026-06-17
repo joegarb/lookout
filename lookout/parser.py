@@ -50,6 +50,7 @@ def _parse_traefik(line: str, source: str) -> LogEntry | None:
             bytes_sent=int(d.get("DownstreamContentSize", 0)),
             user_agent=d.get("request_User-Agent", ""),
             source=source,
+            host=d.get("RequestHost", ""),
         )
     except (ValueError, KeyError, json.JSONDecodeError):
         # Fall back to CLF — traefik can be configured to log in either format
@@ -70,6 +71,7 @@ def _parse_caddy(line: str, source: str) -> LogEntry | None:
             bytes_sent=int(d.get("size", 0)),
             user_agent=req.get("headers", {}).get("User-Agent", [""])[0],
             source=source,
+            host=req.get("host", ""),
         )
     except (ValueError, KeyError, json.JSONDecodeError):
         return None

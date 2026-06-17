@@ -33,6 +33,7 @@ class LogEntry:
     bytes_sent: int
     user_agent: str
     source: str
+    host: str = ""
 
 
 class AlertKind(Enum):

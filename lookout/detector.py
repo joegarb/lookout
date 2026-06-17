@@ -27,6 +27,12 @@ _ERROR_WINDOW = timedelta(minutes=1)
 _ERROR_THRESHOLD = 50
 
 
+def _path_prefix(path: str) -> str:
+    parts = path.split("/")
+    prefix = "/".join(parts[:3])  # keep at most two segments, e.g. /api/v1
+    return (prefix or "/")[:40]
+
+
 def _is_success(status: int) -> bool:
     """A 2xx response means the request was actually served (not blocked/missing)."""
     return 200 <= status < 300
@@ -39,7 +45,7 @@ class Detector:
         self._auth_hits: OrderedDict[str, deque[tuple[datetime, str]]] = OrderedDict()
         self._path_hits: OrderedDict[str, deque[tuple[datetime, str]]] = OrderedDict()
         # sources are bounded (a handful of services), so no cap needed here
-        self._error_hits: dict[str, deque[datetime]] = defaultdict(deque)
+        self._error_hits: dict[str, deque[tuple[datetime, LogEntry]]] = defaultdict(deque)
         # keys currently over threshold — so we alert once on crossing, not per line
         self._brute_active: set[str] = set()
         self._scan_active: set[str] = set()
@@ -150,18 +156,33 @@ class Detector:
         if entry.status < 400:
             return []
         q = self._error_hits[entry.source]
-        q.append(entry.timestamp)
+        q.append((entry.timestamp, entry))
         cutoff = entry.timestamp - _ERROR_WINDOW
-        while q and q[0] < cutoff:
+        while q and q[0][0] < cutoff:
             q.popleft()
         if self._crossed(len(q), _ERROR_THRESHOLD, entry.source, self._error_active):
+            group_counts: dict[tuple[int, str], int] = defaultdict(int)
+            group_paths: dict[tuple[int, str], list[str]] = defaultdict(list)
+            for _, e in q:
+                key = (e.status, e.host)
+                group_counts[key] += 1
+                prefix = _path_prefix(e.path)
+                if prefix not in group_paths[key]:
+                    group_paths[key].append(prefix)
+            lines = [f"{len(q)} errors in {_ERROR_WINDOW}"]
+            for (status, host), count in sorted(group_counts.items(), key=lambda x: -x[1])[:5]:
+                label = f"  {host + ' ' if host else ''}{status} \xd7{count}:"
+                prefixes = group_paths[(status, host)]
+                shown = prefixes[:3]
+                ellipsis = ", ..." if len(prefixes) > 3 else ""
+                lines.append(f"{label} {', '.join(shown)}{ellipsis}")
             # Errors come from many IPs; attributing the spike to one is misleading.
             return [
                 Alert(
                     kind=AlertKind.ERROR_SPIKE,
                     source=entry.source,
                     ip="-",
-                    detail=f"{len(q)} errors in {_ERROR_WINDOW}",
+                    detail="\n".join(lines),
                     immediate=True,
                 )
             ]

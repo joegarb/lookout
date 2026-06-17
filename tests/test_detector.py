@@ -74,12 +74,61 @@ def test_scanner_threshold():
     assert any(a.kind == AlertKind.SCANNER for a in alerts)
 
 
+def _entry_with_host(
+    path: str,
+    status: int,
+    host: str,
+    ts: datetime | None = None,
+) -> LogEntry:
+    return LogEntry(
+        timestamp=ts or datetime.now(UTC),
+        ip="1.2.3.4",
+        method="GET",
+        path=path,
+        status=status,
+        bytes_sent=100,
+        user_agent="test",
+        source="test",
+        host=host,
+    )
+
+
 def test_error_spike_threshold():
     d = Detector()
     alerts: list = []
     for _ in range(50):
         alerts.extend(d.process(_entry(status=404)))
     assert any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
+
+
+def test_error_spike_detail_groups_by_status_and_host():
+    d = Detector()
+    alerts: list = []
+    for i in range(38):
+        alerts.extend(d.process(_entry_with_host(f"/api/v1/item/{i}", 502, "api.example.com")))
+    for i in range(12):
+        alerts.extend(d.process(_entry_with_host(f"/dashboard/{i}", 404, "app.example.com")))
+    spike = next(a for a in alerts if a.kind == AlertKind.ERROR_SPIKE)
+    assert "api.example.com 502 ×38" in spike.detail
+    assert "app.example.com 404 ×12" in spike.detail
+
+
+def test_error_spike_detail_ellipsis_when_many_paths():
+    d = Detector()
+    alerts: list = []
+    for i in range(50):
+        alerts.extend(d.process(_entry_with_host(f"/section/{i}/page", 404, "example.com")))
+    spike = next(a for a in alerts if a.kind == AlertKind.ERROR_SPIKE)
+    assert "..." in spike.detail
+
+
+def test_error_spike_detail_no_ellipsis_when_few_paths():
+    d = Detector()
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/api/data", 500, "example.com")))
+    spike = next(a for a in alerts if a.kind == AlertKind.ERROR_SPIKE)
+    assert "..." not in spike.detail
 
 
 def test_error_spike_requires_errors():
