@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     # Annotate IPs with country/network via ip-api.com; set false to disable the lookups
     ip_enrichment: bool = True
 
+    # Comma-separated glob patterns (e.g. "myapp.example.com,*.prod.example.com").
+    # If set, only matching hosts count toward error spike detection.
+    error_spike_hosts: str = ""
+    # Comma-separated glob patterns of hosts to never count toward error spike detection.
+    error_spike_ignore_hosts: str = ""
+
     docker_socket: str = "unix:///var/run/docker.sock"
     log_buffer_size: int = 50_000
 

@@ -81,7 +81,14 @@ def main() -> None:
     alerter = Alerter(
         notifier=build_notifier(settings), cooldown_minutes=settings.alert_cooldown_minutes
     )
-    detector = Detector()
+
+    def _parse_patterns(s: str) -> list[str]:
+        return [p.strip() for p in s.split(",") if p.strip()]
+
+    detector = Detector(
+        host_allowlist=_parse_patterns(settings.error_spike_hosts),
+        host_denylist=_parse_patterns(settings.error_spike_ignore_hosts),
+    )
     buffer = DigestBuffer(maxsize=settings.log_buffer_size)
 
     # Catch dangerous exposure (e.g. a database published to the internet) at startup,

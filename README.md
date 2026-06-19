@@ -90,6 +90,8 @@ docker compose exec lookout python -m lookout.selftest
 | `DIGEST_SCHEDULE` | `0 8 * * *` | Cron expression for the digest (default 8am daily; e.g. `0 * * * *` hourly, `0 8 * * 1` 8am Mondays). The lookback window matches the interval automatically. |
 | `ALERT_COOLDOWN_MINUTES` | `60` | Suppress duplicate alerts for this long |
 | `IP_ENRICHMENT` | `true` | Annotate IPs with country/network via ip-api.com (so alerts read "… from DigitalOcean, Germany"). Set `false` to disable the external lookups. |
+| `ERROR_SPIKE_HOSTS` | — | Comma-separated glob patterns of hosts to monitor for error spikes (e.g. `myapp.example.com,*.prod.example.com`). If set, hosts that don't match are ignored. |
+| `ERROR_SPIKE_IGNORE_HOSTS` | — | Comma-separated glob patterns of hosts to exclude from error spike detection (e.g. `lab.example.com,*.catchall.example.com`). Useful for Traefik catchall routes or hosts with no real service behind them. |
 
 ## Development
 

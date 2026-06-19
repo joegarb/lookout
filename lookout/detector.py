@@ -3,6 +3,7 @@ import re
 import threading
 from collections import OrderedDict, defaultdict, deque
 from datetime import datetime, timedelta
+from fnmatch import fnmatch
 from urllib.parse import unquote
 
 from lookout.models import Alert, AlertKind, LogEntry
@@ -39,8 +40,15 @@ def _is_success(status: int) -> bool:
 
 
 class Detector:
-    def __init__(self, max_tracked_ips: int = 10_000) -> None:
+    def __init__(
+        self,
+        max_tracked_ips: int = 10_000,
+        host_allowlist: list[str] | None = None,
+        host_denylist: list[str] | None = None,
+    ) -> None:
         self._max_tracked_ips = max_tracked_ips
+        self._host_allowlist = [p.lower() for p in (host_allowlist or [])]
+        self._host_denylist = [p.lower() for p in (host_denylist or [])]
         self._lock = threading.Lock()
         self._auth_hits: OrderedDict[str, deque[tuple[datetime, str]]] = OrderedDict()
         self._path_hits: OrderedDict[str, deque[tuple[datetime, str]]] = OrderedDict()
@@ -139,8 +147,18 @@ class Detector:
             ]
         return []
 
+    def _host_tracked(self, host: str) -> bool:
+        h = host.lower()
+        if self._host_denylist and any(fnmatch(h, p) for p in self._host_denylist):
+            return False
+        if self._host_allowlist and not any(fnmatch(h, p) for p in self._host_allowlist):
+            return False
+        return True
+
     def _check_error_spike(self, entry: LogEntry) -> list[Alert]:
         if entry.status < 400:
+            return []
+        if not self._host_tracked(entry.host):
             return []
         q = self._error_hits[entry.source]
         q.append((entry.timestamp, entry))

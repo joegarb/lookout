@@ -195,3 +195,59 @@ def test_ip_cap_does_not_crash():
     for i in range(10):
         d.process(_entry(path=f"/path/{i}", ip=f"10.0.0.{i}"))
     assert len(d._path_hits) <= 3
+
+
+def test_error_spike_host_denylist_suppresses():
+    d = Detector(host_denylist=["lab.example.com", "*.catchall.example.com"])
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/x.php", 503, "lab.example.com")))
+    assert not any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
+
+
+def test_error_spike_host_denylist_glob():
+    d = Detector(host_denylist=["*.lab.example.com"])
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/x.php", 503, "sub.lab.example.com")))
+    assert not any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
+
+
+def test_error_spike_host_denylist_allows_other_hosts():
+    d = Detector(host_denylist=["lab.example.com"])
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/api", 500, "app.example.com")))
+    assert any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
+
+
+def test_error_spike_host_allowlist_passes_matching():
+    d = Detector(host_allowlist=["app.example.com", "api.example.com"])
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/api", 500, "app.example.com")))
+    assert any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
+
+
+def test_error_spike_host_allowlist_suppresses_non_matching():
+    d = Detector(host_allowlist=["app.example.com"])
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/x.php", 503, "lab.example.com")))
+    assert not any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
+
+
+def test_error_spike_host_allowlist_glob():
+    d = Detector(host_allowlist=["*.prod.example.com"])
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/api", 500, "app.prod.example.com")))
+    assert any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
+
+
+def test_error_spike_denylist_takes_precedence_over_allowlist():
+    d = Detector(host_allowlist=["*.example.com"], host_denylist=["lab.example.com"])
+    alerts: list = []
+    for _ in range(50):
+        alerts.extend(d.process(_entry_with_host("/x.php", 503, "lab.example.com")))
+    assert not any(a.kind == AlertKind.ERROR_SPIKE for a in alerts)
