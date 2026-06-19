@@ -79,19 +79,6 @@ class Detector:
         if not (_SENSITIVE_PATHS.search(entry.path) or _INJECTION_PATTERNS.search(entry.path)):
             return []
         detail = f"{entry.method} {entry.path} → {entry.status}"
-        if _is_success(entry.status):
-            # The probe worked — the file/path was actually served. Interrupt-worthy.
-            return [
-                Alert(
-                    kind=AlertKind.SENSITIVE_HIT,
-                    source=entry.source,
-                    ip=entry.ip,
-                    detail=detail,
-                    immediate=True,
-                    entries=[entry],
-                )
-            ]
-        # A blocked/missing probe is background noise — record it for the digest only.
         return [
             Alert(
                 kind=AlertKind.SENSITIVE_PATH,

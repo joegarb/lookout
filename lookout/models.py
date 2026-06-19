@@ -41,7 +41,6 @@ class AlertKind(Enum):
     SCANNER = "scanner"
     ERROR_SPIKE = "error_spike"
     SENSITIVE_PATH = "sensitive_path"
-    SENSITIVE_HIT = "sensitive_hit"
     EXPOSURE = "exposure"
 
 

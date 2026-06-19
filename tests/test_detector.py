@@ -29,15 +29,6 @@ def test_sensitive_path_probe_is_digest_only():
     assert probe.immediate is False
 
 
-def test_sensitive_path_success_is_immediate_hit():
-    d = Detector()
-    alerts = d.process(_entry(path="/.env", status=200))
-    hit = next(a for a in alerts if a.kind == AlertKind.SENSITIVE_HIT)
-    assert hit.immediate is True
-    # a served secret is not also reported as a mere probe
-    assert not any(a.kind == AlertKind.SENSITIVE_PATH for a in alerts)
-
-
 def test_sensitive_path_wp_admin():
     d = Detector()
     alerts = d.process(_entry(path="/wp-admin/", status=404))

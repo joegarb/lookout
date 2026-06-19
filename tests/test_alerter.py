@@ -49,7 +49,7 @@ def test_multinotifier_fans_out_and_survives_failure():
 def test_alerter_routes_through_notifier():
     rec = _RecordingNotifier()
     Alerter(notifier=rec).send_alert(
-        Alert(kind=AlertKind.SENSITIVE_HIT, source="web", ip="1.2.3.4", detail="x")
+        Alert(kind=AlertKind.SCANNER, source="web", ip="1.2.3.4", detail="x")
     )
     assert len(rec.calls) == 1
     title, _ = rec.calls[0]
