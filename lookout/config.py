@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     webhook_url: str = ""
 
     # Cron expression for the digest (default: 8am daily). e.g. "0 * * * *" hourly,
-    # "0 8 * * 1" 8am Mondays. The lookback window matches the interval automatically.
+    # "0 8 * * 0" 8am Mondays. Note: day_of_week uses APScheduler convention
+    # (0=Mon, 1=Tue, ..., 6=Sun), not standard cron convention (0=Sun).
     digest_schedule: str = "0 8 * * *"
     alert_cooldown_minutes: int = 60
     # Annotate IPs with country/network via ip-api.com; set false to disable the lookups

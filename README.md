@@ -87,7 +87,7 @@ docker compose exec lookout python -m lookout.selftest
 
 | Variable | Default | Description |
 |---|---|---|
-| `DIGEST_SCHEDULE` | `0 8 * * *` | Cron expression for the digest (default 8am daily; e.g. `0 * * * *` hourly, `0 8 * * 1` 8am Mondays). The lookback window matches the interval automatically. |
+| `DIGEST_SCHEDULE` | `0 8 * * *` | Cron expression for the digest (default 8am daily; e.g. `0 * * * *` hourly, `0 8 * * 0` 8am Mondays). **Note:** day_of_week uses APScheduler convention (0=Mon, 1=Tue, …, 6=Sun), not standard cron (where 0=Sun). The lookback window matches the interval automatically. |
 | `ALERT_COOLDOWN_MINUTES` | `60` | Suppress duplicate alerts for this long |
 | `IP_ENRICHMENT` | `true` | Annotate IPs with country/network via ip-api.com (so alerts read "… from DigitalOcean, Germany"). Set `false` to disable the external lookups. |
 | `ERROR_SPIKE_HOSTS` | — | Comma-separated glob patterns of hosts to monitor for error spikes (e.g. `myapp.example.com,*.prod.example.com`). If set, hosts that don't match are ignored. |
