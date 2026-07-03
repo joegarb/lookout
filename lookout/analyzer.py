@@ -135,9 +135,13 @@ def digest_prompt(
     summary = _summarise_entries(entries)
     findings_summary = _summarise_findings(findings or [])
     exposure_summary = _summarise_exposure(exposures or [])
+    if period_hours % 24 == 0:
+        period_label = f"{period_hours // 24} day{'s' if period_hours // 24 != 1 else ''}"
+    else:
+        period_label = f"{period_hours} hour{'s' if period_hours != 1 else ''}"
     return textwrap.dedent(f"""
         You are a security assistant for a self-hosted homelab. Analyse the following web server
-        traffic summary from the last {period_hours} hours and write a plain-English digest for
+        traffic summary from the last {period_label} and write a plain-English digest for
         the homelab owner.
 
         Structure your response as:
