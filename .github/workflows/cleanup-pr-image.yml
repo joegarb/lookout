@@ -1,0 +1,24 @@
+name: Clean up PR image
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete PR image from ghcr.io
+        run: |
+          VERSION_ID=$(gh api /user/packages/container/lookout/versions \
+            --jq '.[] | select(.metadata.container.tags[] == "pr-${{ github.event.pull_request.number }}") | .id')
+          if [ -n "$VERSION_ID" ]; then
+            gh api --method DELETE /user/packages/container/lookout/versions/$VERSION_ID
+            echo "Deleted pr-${{ github.event.pull_request.number }}"
+          else
+            echo "No image found for pr-${{ github.event.pull_request.number }}, nothing to delete"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
