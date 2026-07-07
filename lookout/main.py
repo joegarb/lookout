@@ -76,7 +76,11 @@ def main() -> None:
         logger.info("discovered %s source: %s (%s)", s.kind.value, s.name, s.format.value)
 
     ai = build_provider(
-        settings.ai_provider_order, settings.anthropic_api_key, settings.openai_api_key
+        settings.ai_provider_order,
+        settings.anthropic_api_key,
+        settings.openai_api_key,
+        settings.ollama_base_url,
+        settings.ollama_model,
     )
     alerter = Alerter(
         notifier=build_notifier(settings), cooldown_minutes=settings.alert_cooldown_minutes
