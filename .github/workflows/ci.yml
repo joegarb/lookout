@@ -30,3 +30,6 @@ jobs:
 
       - name: Tests
         run: uv run pytest
+
+      - name: Docker build
+        run: docker build .
