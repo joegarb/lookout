@@ -31,7 +31,7 @@ select = ["E", "F", "I", "UP"]
 
 [tool.mypy]
 strict = true
-python_version = "3.13"
+python_version = "3.14"
 
 [[tool.mypy.overrides]]
 module = ["apscheduler.*", "watchdog.*"]
