@@ -78,7 +78,9 @@ def main() -> None:
     ai = build_provider(
         settings.ai_provider_order,
         settings.anthropic_api_key,
+        settings.anthropic_model,
         settings.openai_api_key,
+        settings.openai_model,
         settings.ollama_base_url,
         settings.ollama_model,
     )

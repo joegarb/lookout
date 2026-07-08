@@ -5,7 +5,9 @@ class Settings(BaseSettings):
     # Comma-separated provider order; first one with a key/url present wins
     ai_provider_order: str = "ollama,anthropic,openai"
     anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-sonnet-4-6"
     openai_api_key: str | None = None
+    openai_model: str = "gpt-4o"
     ollama_base_url: str | None = None
     ollama_model: str = "llama3.2:3b"
 

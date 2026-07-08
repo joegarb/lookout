@@ -11,16 +11,20 @@ from lookout.models import Alert, Exposure, ExposureRisk, LogEntry
 
 
 class AIProvider(Protocol):
+    label: str
+
     def complete(self, prompt: str) -> str: ...
 
 
 class AnthropicProvider:
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, model: str) -> None:
         self._client = anthropic.Anthropic(api_key=api_key)
+        self._model = model
+        self.label = f"Anthropic / {model}"
 
     def complete(self, prompt: str) -> str:
         msg = self._client.messages.create(
-            model="claude-sonnet-4-6",
+            model=self._model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -28,12 +32,14 @@ class AnthropicProvider:
 
 
 class OpenAIProvider:
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, model: str) -> None:
         self._client = openai.OpenAI(api_key=api_key)
+        self._model = model
+        self.label = f"OpenAI / {model}"
 
     def complete(self, prompt: str) -> str:
         resp = self._client.chat.completions.create(
-            model="gpt-4o",
+            model=self._model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -44,6 +50,7 @@ class OllamaProvider:
     def __init__(self, base_url: str, model: str) -> None:
         self._client = openai.OpenAI(base_url=f"{base_url}/v1", api_key="ollama")
         self._model = model
+        self.label = f"Ollama / {model}"
 
     def complete(self, prompt: str) -> str:
         resp = self._client.chat.completions.create(
@@ -57,15 +64,17 @@ class OllamaProvider:
 def build_provider(
     provider_order: str,
     anthropic_key: str | None,
+    anthropic_model: str,
     openai_key: str | None,
-    ollama_base_url: str | None = None,
-    ollama_model: str = "llama3.2:3b",
+    openai_model: str,
+    ollama_base_url: str | None,
+    ollama_model: str,
 ) -> AIProvider:
     for name in [p.strip() for p in provider_order.split(",")]:
         if name == "anthropic" and anthropic_key:
-            return AnthropicProvider(anthropic_key)
+            return AnthropicProvider(anthropic_key, anthropic_model)
         if name == "openai" and openai_key:
-            return OpenAIProvider(openai_key)
+            return OpenAIProvider(openai_key, openai_model)
         if name == "ollama" and ollama_base_url:
             return OllamaProvider(ollama_base_url, ollama_model)
 
