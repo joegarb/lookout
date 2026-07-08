@@ -2,10 +2,14 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Comma-separated provider order; first one with a key present wins
-    ai_provider_order: str = "anthropic,openai"
+    # Comma-separated provider order; first one with a key/url present wins
+    ai_provider_order: str = "ollama,anthropic,openai"
     anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-sonnet-4-6"
     openai_api_key: str | None = None
+    openai_model: str = "gpt-4o"
+    ollama_base_url: str | None = None
+    ollama_model: str = "llama3.2:3b"
 
     smtp_host: str = ""
     smtp_port: int = 587
@@ -40,10 +44,17 @@ class Settings(BaseSettings):
     log_buffer_size: int = 50_000
 
     def validate_ai(self) -> None:
-        available = {"anthropic": self.anthropic_api_key, "openai": self.openai_api_key}
+        available = {
+            "anthropic": self.anthropic_api_key,
+            "openai": self.openai_api_key,
+            "ollama": self.ollama_base_url,
+        }
         order = [p.strip() for p in self.ai_provider_order.split(",")]
         if not any(available.get(p) for p in order):
-            raise ValueError("No AI API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.")
+            raise ValueError(
+                "No AI provider configured. "
+                "Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or OLLAMA_BASE_URL."
+            )
 
     def validate_notifications(self) -> None:
         if not (self.smtp_host or self.ntfy_url or self.webhook_url):
