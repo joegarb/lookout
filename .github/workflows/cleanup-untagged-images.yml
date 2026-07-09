@@ -12,9 +12,9 @@ jobs:
       packages: write
     steps:
       - name: Delete untagged images
-        uses: actions/delete-package-versions@v5
+        uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          package-name: lookout
-          package-type: container
-          delete-only-untagged-versions: true
-          min-versions-to-keep: 0
+          package: lookout
+          delete-untagged: true
+          delete-ghost-images: true
+          validate: true
