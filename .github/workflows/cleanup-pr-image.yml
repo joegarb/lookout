@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Delete PR image from ghcr.io
         run: |
-          VERSION_ID=$(gh api /user/packages/container/lookout/versions \
+          VERSION_ID=$(gh api --paginate /user/packages/container/lookout/versions \
             --jq '.[] | select(.metadata.container.tags[] == "pr-${{ github.event.pull_request.number }}") | .id')
           if [ -n "$VERSION_ID" ]; then
             gh api --method DELETE /user/packages/container/lookout/versions/$VERSION_ID
