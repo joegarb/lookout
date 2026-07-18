@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # Comma-separated glob patterns of hosts to never count toward error spike detection.
     error_spike_ignore_hosts: str = ""
 
+    # Comma-separated paths of report files from other tools, appended verbatim to each
+    # digest (e.g. a mounted site-monitor report). Missing or stale files are called out.
+    digest_include_files: str = ""
+
     docker_socket: str = "unix:///var/run/docker.sock"
     log_buffer_size: int = 50_000
 

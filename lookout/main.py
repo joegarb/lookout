@@ -105,11 +105,12 @@ def main() -> None:
 
     trigger = CronTrigger.from_crontab(settings.digest_schedule)
     period_hours = digest_period_hours(trigger)
+    include_files = [p.strip() for p in settings.digest_include_files.split(",") if p.strip()]
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         send_digest,
         trigger=trigger,
-        args=[buffer, ai, alerter, settings.docker_socket, period_hours],
+        args=[buffer, ai, alerter, settings.docker_socket, period_hours, include_files],
     )
     scheduler.start()
 
