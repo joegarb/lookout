@@ -96,6 +96,7 @@ docker compose exec lookout python -m lookout.selftest
 | `IP_ENRICHMENT` | `true` | Annotate IPs with country/network via ip-api.com (so alerts read "… from DigitalOcean, Germany"). Set `false` to disable the external lookups. |
 | `ERROR_SPIKE_HOSTS` | — | Comma-separated glob patterns of hosts to monitor for error spikes (e.g. `myapp.example.com,*.prod.example.com`). If set, hosts that don't match are ignored. |
 | `ERROR_SPIKE_IGNORE_HOSTS` | — | Comma-separated glob patterns of hosts to exclude from error spike detection (e.g. `lab.example.com,*.catchall.example.com`). Useful for Traefik catchall routes or hosts with no real service behind them. |
+| `DIGEST_INCLUDE_FILES` | — | Comma-separated paths of report files from other tools, appended verbatim to each digest (mount them into the container, e.g. a site-monitor's markdown report). Files that are missing or older than the digest period are called out rather than silently skipped. |
 
 ## Development
 
