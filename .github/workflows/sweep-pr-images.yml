@@ -1,0 +1,34 @@
+name: Sweep PR images
+
+# Safety net for the close-triggered cleanup: if a PR's `closed` event is ever
+# missed, this deletes any pr-<n> image whose PR is no longer open.
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      pull-requests: read
+    steps:
+      - name: Delete images for non-open PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api --paginate /user/packages/container/lookout/versions \
+            --jq '.[] | .id as $id | .metadata.container.tags[]? | select(startswith("pr-")) | "\($id)\t\(.)"' \
+          | while IFS=$'\t' read -r id tag; do
+              num=${tag#pr-}
+              state=$(gh pr view "$num" --repo "$GITHUB_REPOSITORY" --json state --jq .state 2>/dev/null || echo MISSING)
+              if [ "$state" = "OPEN" ]; then
+                echo "PR #$num open, keeping $tag"
+              else
+                echo "PR #$num is $state, deleting $tag (version $id)"
+                gh api --method DELETE /user/packages/container/lookout/versions/$id
+              fi
+            done
