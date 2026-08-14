@@ -38,6 +38,9 @@ jobs:
   pr-image-check:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       publish: ${{ steps.decide.outputs.publish }}
     steps:
