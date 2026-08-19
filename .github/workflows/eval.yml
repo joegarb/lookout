@@ -1,0 +1,53 @@
+name: Digest eval
+
+# Manual only: this hits real models and costs tokens. LAN Ollama isn't reachable from
+# Actions, so CI uses a cloud provider as both the system under test and the judge.
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Provider for the system under test and judge
+        type: choice
+        options: [anthropic, openai]
+        default: anthropic
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run digest eval
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AI_PROVIDER_ORDER: ${{ inputs.provider }}
+          JUDGE: ${{ inputs.provider }}
+        run: uv run deepeval test run evals/test_digest.py 2>&1 | tee eval-output.txt
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Digest eval (${{ inputs.provider }})"
+            echo '```'
+            tail -n 30 eval-output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: eval-output.txt
+          if-no-files-found: warn
