@@ -1,0 +1,35 @@
+description: lookout digest quality & provider parity
+
+prompts:
+  - id: file://gen_prompt.py:create_prompt
+    label: digest_prompt
+
+providers:
+  - id: "ollama:chat:{{ env.OLLAMA_MODEL | default('llama3.2:3b') }}"
+    config:
+      temperature: 0
+  - id: "anthropic:messages:{{ env.ANTHROPIC_MODEL | default('claude-sonnet-4-6') }}"
+    config:
+      temperature: 0
+  - id: "openai:chat:{{ env.OPENAI_MODEL | default('gpt-4o') }}"
+    config:
+      temperature: 0
+
+defaultTest:
+  options:
+    provider:
+      id: "{{ env.GRADER | default('ollama:chat:llama3.2:3b') }}"
+      config:
+        temperature: 0
+  assert:
+    - type: python
+      value: file://checks.py:ips_grounded
+      metric: no_hallucinated_ips
+    - type: llm-rubric
+      metric: structure
+      threshold: 0.7
+      value: >-
+        The digest gives a clear one-line assessment, notable findings, and any
+        recommended actions.
+
+tests: file://cases.yaml

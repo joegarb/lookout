@@ -1,0 +1,73 @@
+- description: CRITICAL exposed database must dominate the digest
+  vars:
+    scenario: critical_db_exposed
+  assert:
+    - type: llm-rubric
+      metric: severity_ordering
+      threshold: 0.8
+      value: >-
+        The exposed PostgreSQL database (a CRITICAL finding) is the single most
+        prominent item and is framed as something to fix now. The concurrent
+        scanning/probing is NOT presented as the main concern.
+    - type: icontains-any
+      value: ["5432", "postgres"]
+
+- description: A quiet day of background scanning should read as calm/normal
+  vars:
+    scenario: routine_scanning_only
+  assert:
+    - type: llm-rubric
+      metric: no_alarmism
+      threshold: 0.8
+      value: >-
+        The tone is calm and proportionate. Ordinary background scanning/probing is
+        not described as an attack or an emergency, and the overall assessment reads
+        as broadly "safe" or "normal" rather than "needs attention".
+
+- description: A 5xx error spike should be flagged as the owner's own service, not an attack
+  vars:
+    scenario: real_error_spike
+  assert:
+    - type: llm-rubric
+      metric: error_spike_framing
+      threshold: 0.8
+      value: >-
+        The digest identifies the spike in 5xx/server errors as most likely the
+        owner's own service failing and suggests checking that service. It does NOT
+        frame the error spike as an external attack.
+
+- description: A sensitive file served with 200 is confirmed impact, not routine probing
+  vars:
+    scenario: sensitive_path_hit
+  assert:
+    - type: llm-rubric
+      metric: sensitive_hit_framing
+      threshold: 0.8
+      value: >-
+        The digest treats the sensitive files returning 200 (e.g. /.env being publicly
+        readable) as a real, serious problem needing action — NOT as harmless routine
+        probing or scanning. Successful access is distinguished from a blocked attempt.
+
+- description: A WARNING-level exposure should be noted but not treated as fix-now critical
+  vars:
+    scenario: exposure_warning
+  assert:
+    - type: llm-rubric
+      metric: warning_proportionality
+      threshold: 0.8
+      value: >-
+        The exposed web service on all interfaces is noted as worth reviewing or
+        confirming it is intentional, but is NOT framed as a critical, severe, fix-now
+        emergency on par with an exposed database, cache, or the Docker API.
+
+- description: A benign day should read as all-clear with no invented concerns
+  vars:
+    scenario: all_clear
+  assert:
+    - type: llm-rubric
+      metric: no_invented_concern
+      threshold: 0.8
+      value: >-
+        The overall assessment is safe/normal. The digest does not invent security
+        concerns, exaggerate ordinary traffic, or recommend urgent action when there
+        is nothing wrong.

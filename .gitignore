@@ -13,6 +13,11 @@ wheels/
 .env
 .env.*
 
+# Node (evals harness)
+node_modules/
+.promptfoo/
+output.json
+
 # Editor
 .DS_Store
 .idea/
