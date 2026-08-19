@@ -1,0 +1,48 @@
+name: Digest eval
+
+# Manual only: this hits real models and costs tokens. LAN Ollama isn't reachable from
+# Actions, so CI uses a cloud provider as both the system under test and the judge.
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Provider for the system under test and judge
+        type: choice
+        options: [anthropic, openai]
+        default: anthropic
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+
+      - name: Install Python deps (for the prompt hook)
+        run: uv sync
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install promptfoo
+        run: npm --prefix evals ci
+
+      - name: Run digest eval
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PROVIDER: ${{ inputs.provider }}
+        # Models come from the same *_MODEL env vars (with defaults) the suite uses.
+        run: |
+          if [ "$PROVIDER" = "openai" ]; then
+            export GRADER="openai:chat:${OPENAI_MODEL:-gpt-4o}"
+          else
+            export GRADER="anthropic:messages:${ANTHROPIC_MODEL:-claude-sonnet-4-6}"
+          fi
+          ./evals/run.sh --filter-providers "$PROVIDER" --no-progress-bar
