@@ -40,9 +40,27 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
         # Models come from the same *_MODEL env vars (with defaults) the suite uses.
         run: |
+          set -eo pipefail  # keep the eval's exit code through the `| tee`
           if [ "$PROVIDER" = "openai" ]; then
             export GRADER="openai:chat:${OPENAI_MODEL:-gpt-4o}"
           else
             export GRADER="anthropic:messages:${ANTHROPIC_MODEL:-claude-sonnet-4-6}"
           fi
-          ./evals/run.sh --filter-providers "$PROVIDER" --no-progress-bar
+          ./evals/run.sh --filter-providers "$PROVIDER" --no-progress-bar \
+            -o promptfoo-results.json 2>&1 | tee eval-output.txt
+
+      - name: Job summary
+        if: always()
+        env:
+          PROVIDER: ${{ inputs.provider }}
+        run: node .github/scripts/eval-summary.js >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: |
+            promptfoo-results.json
+            eval-output.txt
+          if-no-files-found: warn
