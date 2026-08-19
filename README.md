@@ -106,3 +106,11 @@ uv run pytest
 uv run ruff check .
 uv run mypy lookout/
 ```
+
+## Evaluating the digest
+
+The digest is model-generated, so its quality lives in a
+[promptfoo](https://www.promptfoo.dev) harness under [`evals/`](evals/): a handful of
+scenarios scored across all three providers, which also shows whether the local Ollama
+default holds up against the cloud models. Kept out of `pytest`. See
+[`evals/README.md`](evals/README.md).
