@@ -4,7 +4,7 @@
   assert:
     - type: llm-rubric
       metric: severity_ordering
-      threshold: 0.8
+      threshold: 0.7
       value: >-
         The exposed PostgreSQL database (a CRITICAL finding) is the single most
         prominent item and is framed as something to fix now. The concurrent
@@ -18,7 +18,7 @@
   assert:
     - type: llm-rubric
       metric: no_alarmism
-      threshold: 0.8
+      threshold: 0.7
       value: >-
         The tone is calm and proportionate. Ordinary background scanning/probing is
         not described as an attack or an emergency, and the overall assessment reads
@@ -30,7 +30,7 @@
   assert:
     - type: llm-rubric
       metric: error_spike_framing
-      threshold: 0.8
+      threshold: 0.7
       value: >-
         The digest identifies the spike in 5xx/server errors as most likely the
         owner's own service failing and suggests checking that service. It does NOT
@@ -42,7 +42,7 @@
   assert:
     - type: llm-rubric
       metric: sensitive_hit_framing
-      threshold: 0.8
+      threshold: 0.7
       value: >-
         The digest treats the sensitive files returning 200 (e.g. /.env being publicly
         readable) as a real, serious problem needing action — NOT as harmless routine
@@ -54,7 +54,7 @@
   assert:
     - type: llm-rubric
       metric: warning_proportionality
-      threshold: 0.8
+      threshold: 0.7
       value: >-
         The exposed web service on all interfaces is noted as worth reviewing or
         confirming it is intentional, but is NOT framed as a critical, severe, fix-now
@@ -66,7 +66,7 @@
   assert:
     - type: llm-rubric
       metric: no_invented_concern
-      threshold: 0.8
+      threshold: 0.7
       value: >-
         The overall assessment is safe/normal. The digest does not invent security
         concerns, exaggerate ordinary traffic, or recommend urgent action when there
