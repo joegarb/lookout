@@ -42,7 +42,9 @@ testpaths = ["tests"]
 
 [dependency-groups]
 dev = [
+    "deepeval>=4.1.8",
     "mypy>=2.3.0",
+    "ollama>=0.6.2",
     "pytest>=9.1.1",
     "ruff>=0.15.22",
     "types-docker>=7.2.0.20260720",
