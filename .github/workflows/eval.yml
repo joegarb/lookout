@@ -26,7 +26,7 @@ jobs:
       - name: Install Python deps (for the prompt hook)
         run: uv sync
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
