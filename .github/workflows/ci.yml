@@ -33,8 +33,10 @@ jobs:
       - name: Docker build
         run: docker build .
 
-  # Publish PR images only for things worth hand-testing: skip Dependabot
-  # patch/minor (those auto-merge untested), keep majors and human PRs.
+  # Publish PR images only for things worth hand-testing. Skip anything that
+  # auto-merges untested: Dependabot patch/minor for any ecosystem, plus every
+  # GitHub Actions update (majors included). Keep other-ecosystem majors and
+  # human PRs.
   pr-image-check:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -50,7 +52,8 @@ jobs:
       - id: decide
         run: |
           t="${{ steps.meta.outputs.update-type }}"
-          if [ "$t" = "version-update:semver-patch" ] || [ "$t" = "version-update:semver-minor" ]; then
+          e="${{ steps.meta.outputs.package-ecosystem }}"
+          if [ "$t" = "version-update:semver-patch" ] || [ "$t" = "version-update:semver-minor" ] || [ "$e" = "github_actions" ]; then
             echo "publish=false" >> "$GITHUB_OUTPUT"
           else
             echo "publish=true" >> "$GITHUB_OUTPUT"
