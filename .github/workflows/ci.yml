@@ -48,7 +48,7 @@ jobs:
     steps:
       - id: meta
         if: github.actor == 'dependabot[bot]'
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@v3
       - id: decide
         run: |
           t="${{ steps.meta.outputs.update-type }}"
