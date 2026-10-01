@@ -438,7 +438,7 @@ dev = [
     { name = "mypy", specifier = ">=2.3.1" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.16.3" },
-    { name = "types-docker", specifier = ">=7.2.0.20260813" },
+    { name = "types-docker", specifier = ">=7.2.0.20260827" },
 ]
 
 [[package]]
@@ -738,15 +738,15 @@ wheels = [
 
 [[package]]
 name = "types-docker"
-version = "7.2.0.20260813"
+version = "7.2.0.20260827"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "types-requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/48/a1eeaffe58bfc0d1fd61fc8e1c6a450e73e4ec7181a3720b2a28bce6fabc/types_docker-7.2.0.20260813.tar.gz", hash = "sha256:c42eae5a10afad99864aec144daf62f33422baf265f58be9112ffc037f0e9783", size = 36836, upload-time = "2026-08-13T03:56:42.622Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/92/ebed321b5e0d5f6b2efc2fee34e99961d1425600d3b1629f0684176bc204/types_docker-7.2.0.20260827.tar.gz", hash = "sha256:6e1674ec12dd4d09d6437f735dcf6b3c61e730c330623aacf92b492e1444094f", size = 36929, upload-time = "2026-08-27T12:07:36.723Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/10/878e713aa6176480a70d759e518bc3382f5e31ffc0f8913834c5dd839aaa/types_docker-7.2.0.20260813-py3-none-any.whl", hash = "sha256:8d25c84424ec911cf71eb023ab271f9f6f214e7d2515ed9ce61d6be13fa6d507", size = 51231, upload-time = "2026-08-13T03:56:41.636Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/62/40a2b11c2be94d7288d7c0c5ca673d2b9d11f2930f58ec9d5d98380092ba/types_docker-7.2.0.20260827-py3-none-any.whl", hash = "sha256:ecc2b403ec086552a298232b92b662fb195d0e749f155c0b707e59fdedb5bfdf", size = 51269, upload-time = "2026-08-27T12:07:35.671Z" },
 ]
 
 [[package]]
